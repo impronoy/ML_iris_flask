@@ -1,21 +1,34 @@
-import numpy as np
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify
 import pickle
+import numpy as np
 
-# Create flask app
-flask_app = Flask(__name__)
-model = pickle.load(open("model.pkl", "rb"))
+app = Flask(__name__)
 
-@flask_app.route("/")
-def Home():
-    return render_template("index.html")
+# Load the pickled model
+model = pickle.load(open('model.pkl', 'rb'))
 
-@flask_app.route("/predict", methods = ["POST"])
+# Predict route
+@app.route('/predict', methods=['POST'])
 def predict():
-    float_features = [float(x) for x in request.form.values()]
-    features = [np.array(float_features)]
+    # Get the JSON data from the request body
+    data = request.get_json(force=True)
+    
+    # Extract features from the JSON data
+    Sepal_Length = data['Sepal_Length']
+    Sepal_Width = data['Sepal_Width']
+    Petal_Length = data['Petal_Length']
+    Petal_Width = data['Petal_Width']
+    
+    # Convert the data into the format the model expects
+    features = np.array([[Sepal_Length, Sepal_Width, Petal_Length, Petal_Width]])
+    
+    # Use the model to predict
     prediction = model.predict(features)
-    return render_template("index.html", prediction_text = "The flower species is {}".format(prediction))
+    print(prediction)
+    # Convert the prediction into a response
+    return jsonify({
+        'prediction': "The flower species is {}".format(prediction)  # Send the class prediction in JSON format
+    })
 
-if __name__ == "__main__":
-    flask_app.run(debug=True)
+if __name__ == '__main__':
+    app.run(debug=True)
